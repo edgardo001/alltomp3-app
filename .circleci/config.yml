@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build-linux:
+    docker:
+      - image: circleci/node:10-stretch
+    # working_directory: ~/repo
+    environment:
+      ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
+    steps:
+      - checkout
+      - run: sudo apt-get update
+      - run: sudo apt-get upgrade -y
+      - run: sudo apt-get install ruby-full gdebi
+      - run: sudo gem install rake
+      - run: sudo gem install package_cloud
+      - run: sudo npm install -g @angular/cli@1.0.0
+      - run: cd app && npm install && ./build.sh
+      - run: npm install
+      - run: node .circleci/build.js linux
+      - run: npm run dist
+      - run: node .circleci/build.js linux_old
+      - run: npm run dist
+      - run: node .circleci/build.js linux_end
+      - run: sudo gdebi dist/*_new.deb
+      - run: sudo gdebi dist/*_old.deb
+      - run: package_cloud push "AllToMP3/alltomp3/ubuntu/yakkety" dist/*_new.deb
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-linux
